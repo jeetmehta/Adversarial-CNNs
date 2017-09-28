@@ -78,9 +78,9 @@ with tf.Session() as sess:
 	# Train model
 	for _ in range(1000):
 		batch = mnist.train.next_batch(50)
-		train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
+		train_step.run(session=sess, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
 # Evaluate model
 correct_predicted = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_predicted, tf.float32))
-print(accuracy.eval(feed_dict={x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+print(accuracy.eval(session=sess, feed_dict={x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
