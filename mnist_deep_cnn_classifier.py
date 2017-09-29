@@ -108,11 +108,12 @@ class DeepCNN:
 			self.saver.restore(sess, self.save_filename)
 
 			# Run model on given input
-
+			sess.run()
 
 	# Evaluates and prints the performance of network, given the ground truth labels
 	def evaluate_network(self, x, y_conv, y_, keep_prob):
 
+		# Start Tensorflow sesssion
 		with tf.Session() as sess:
 
 			# Load the trained model
