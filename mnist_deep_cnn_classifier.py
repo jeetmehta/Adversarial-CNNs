@@ -1,6 +1,7 @@
 # Import relevant modules
 from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
+import numpy as np
 
 # Load input data
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
@@ -8,7 +9,7 @@ mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
 # Class that describes the deep CNN: contains all relevant variables and functions
 class DeepCNN:
 
-	def __init__(self, save_file_name='deep_cnn_model', learning_rate=1e-4, batch_size=50, training_size=50):
+	def __init__(self, learning_rate=1e-4, batch_size=50, training_size=20000, save_file_name='deep_cnn_model'):
 		self.save_filename = save_file_name
 		self.learning_rate = learning_rate
 		self.batch_size = batch_size
@@ -72,14 +73,18 @@ class DeepCNN:
 		b_fc2 = self.init_bias_variables([10])
 		y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
 
+		# Initialize saver
+		self.saver = tf.train.Saver()
+
 		return y_conv
 
 
 	# Trains the CNN using cross-entropy loss 
 	def train_network(self, x, y_conv, y_, keep_prob, save_model):
 
-		# Define cross-entropy loss function and training configuration
+		# Define cross-entropy loss function, gradient and training configuration
 		cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv))
+		self.gradient = tf.gradients(cross_entropy, x)
 		train_step = tf.train.AdamOptimizer(self.learning_rate).minimize(cross_entropy)
 
 		# Start Tensorflow sesssion
@@ -93,13 +98,13 @@ class DeepCNN:
 				batch = mnist.train.next_batch(self.batch_size)
 				train_step.run(session=sess, feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5})
 
+			# Save model
 			if save_model:
-				self.saver = tf.train.Saver()
 				self.saver.save(sess, self.save_filename)
 
 
 	# Runs/evaluates/predicts using the trained model, given/at a specific input
-	def predict_network(self, x):
+	def predict_network(self, x, input_data, y_conv, y_, keep_prob):
 
 		# Start Tensorflow sesssion
 		with tf.Session() as sess:
@@ -108,7 +113,10 @@ class DeepCNN:
 			self.saver.restore(sess, self.save_filename)
 
 			# Run model on given input
-			sess.run()
+			sess.run(y_conv, feed_dict = {x: input_data, keep_prob: 1.0})
+			correct_predicted = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
+			accuracy = tf.reduce_mean(tf.cast(correct_predicted, tf.float32))
+			print(accuracy.eval(session=sess, feed_dict={x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
 
 	# Evaluates and prints the performance of network, given the ground truth labels
 	def evaluate_network(self, x, y_conv, y_, keep_prob):
@@ -124,6 +132,65 @@ class DeepCNN:
 			accuracy = tf.reduce_mean(tf.cast(correct_predicted, tf.float32))
 			print(accuracy.eval(session=sess, feed_dict={x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
 
+	# Creates adversarial examples using a linear combination "2" digit inputs and noise
+	def create_adv_samples(self, x, y_conv, y_, keep_prob, noise, sample_size):
+
+		# Start Tensorflow sesssion
+		with tf.Session() as sess:
+
+			# Load the trained model
+			self.saver.restore(sess, self.save_filename)
+
+			# Create variables to store sample information: image, label, one_hot_vector, prediction_vector, predicted_label
+			sample_images = np.empty(shape=(10, 784))
+			sample_predictions = np.empty(shape=(10,10))
+			sample_predicted_labels = np.empty(shape=(10,1))
+			sample_labels = np.empty(shape=(10,1))
+			sample_one_hots = np.empty(shape=(10,10))
+			idx, num_count = 0, 0
+
+			# Find and store subset variables: 10 samples of "2", along with their associated info
+			while (num_count < 10):
+				idx = idx + 1
+				if (mnist.train.labels[idx][2] == 1):
+					sample_labels[num_count] = np.argmax(mnist.train.labels[idx])
+					sample_one_hots[num_count] = mnist.train.labels[idx]
+					sample_images[num_count] = mnist.train.images[idx]
+					sample_predictions[num_count] = sess.run(y_conv, feed_dict={x: np.reshape(sample_images[num_count], (-1, 784)), y_: np.reshape(sample_one_hots[num_count], (-1, 10)), keep_prob: 1.0})
+					sample_predicted_labels[num_count] = np.argmax(sample_predictions[num_count])
+					num_count = num_count + 1
+			
+			print sample_labels
+			print sample_predicted_labels
+
+			# Add noise to each sample image
+			for i in range(0, 10):
+
+				# Image-wise local info
+				image = sample_images[i]
+				prediction_label = sample_predicted_labels[i]
+				label = sample_labels[i]
+				one_hot = sample_one_hots[i]
+
+				# Store & Calculate gradients
+				gradient_output = np.array(sess.run(self.gradient, feed_dict={x:np.reshape(image, (-1, 784)), y_:np.reshape(one_hot, (-1, 10)), keep_prob:1.0}))
+				print (gradient_output.shape)
+				gradient_sign = np.sign(gradient_output[0])
+				normalized_gradient = sum([np.abs(w) for w in gradient_output[0]])
+
+				# Add noise to input samples
+				count = 0
+				for grad_step in np.linspace(0.25, 100):
+
+					# Create adversarial image
+					adversarial_image = grad_step * gradient_sign + image
+					new_prediction = sess.run(y_conv, feed_dict={x: adversarial_image, keep_prob:1.0})
+					new_predicted_label = np.argmax(new_prediction)
+					print(new_predicted_label)
+					count = count + 1
+				print(count)
+
+
 # Main function
 def main():
 
@@ -133,14 +200,20 @@ def main():
 	keep_prob = tf.placeholder(tf.float32)
 
 	# Initialize & build CNN model -> save output variable
-	model = DeepCNN()
+	model = DeepCNN(1e-4, 50, 50, 'deep_cnn_model')
 	y_conv = model.build_network(x, keep_prob)
 
 	# Train the network
 	model.train_network(x, y_conv, y_, keep_prob, True)
 
 	# Evaluate performance
-	model.evaluate_network(x, y_conv, y_, keep_prob)
+	# model.evaluate_network(x, y_conv, y_, keep_prob)
+
+	# Predict performance
+	# model.predict_network(x, mnist.test.images, y_conv, y_, keep_prob)
+
+	# Generate adversarial examples
+	model.create_adv_samples(x, y_conv, y_, keep_prob, 0.10, 10)
 
 # Runs main function only if the script is explicitly called -> prevents it from running during imports
 if __name__ == "__main__":
