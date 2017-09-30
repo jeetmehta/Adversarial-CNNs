@@ -147,7 +147,7 @@ class DeepCNN:
 			sample_predicted_labels = np.empty(shape=(10,1))
 			sample_labels = np.empty(shape=(10,1))
 			sample_one_hots = np.empty(shape=(10,10))
-			idx, num_count = 0, 0
+			idx, test, num_count = 0, 0, 0
 
 			# Find and store subset variables: 10 samples of "2", along with their associated info
 			while (num_count < 10):
@@ -159,12 +159,12 @@ class DeepCNN:
 					sample_predictions[num_count] = sess.run(y_conv, feed_dict={x: np.reshape(sample_images[num_count], (-1, 784)), y_: np.reshape(sample_one_hots[num_count], (-1, 10)), keep_prob: 1.0})
 					sample_predicted_labels[num_count] = np.argmax(sample_predictions[num_count])
 					num_count = num_count + 1
-			
+
 			print sample_labels
 			print sample_predicted_labels
 
 			# Add noise to each sample image
-			for i in range(0, 10):
+			for i in range(0, len(sample_labels)):
 
 				# Image-wise local info
 				image = sample_images[i]
@@ -174,21 +174,19 @@ class DeepCNN:
 
 				# Store & Calculate gradients
 				gradient_output = np.array(sess.run(self.gradient, feed_dict={x:np.reshape(image, (-1, 784)), y_:np.reshape(one_hot, (-1, 10)), keep_prob:1.0}))
-				print (gradient_output.shape)
 				gradient_sign = np.sign(gradient_output[0])
 				normalized_gradient = sum([np.abs(w) for w in gradient_output[0]])
 
 				# Add noise to input samples
 				count = 0
-				for grad_step in np.linspace(0.25, 100):
+				adv_weight = 0.01
 
-					# Create adversarial image
-					adversarial_image = grad_step * gradient_sign + image
-					new_prediction = sess.run(y_conv, feed_dict={x: adversarial_image, keep_prob:1.0})
-					new_predicted_label = np.argmax(new_prediction)
-					print(new_predicted_label)
-					count = count + 1
-				print(count)
+				# Create adversarial image
+				noise = adv_weight * gradient_sign
+				adversarial_image = noise + image
+				new_prediction = sess.run(y_conv, feed_dict={x: adversarial_image, keep_prob:1.0})
+				new_predicted_label = np.argmax(new_prediction)
+				print(new_predicted_label)
 
 
 # Main function
