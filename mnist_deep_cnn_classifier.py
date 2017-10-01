@@ -148,14 +148,20 @@ class DeepCNN:
 			# Looping indices/variables
 			idx, num_count = 0, 0
 
+			# Storage variables for later visualization
+			original_images = []
+			pertubations = []
+			adversarial_images = []
+
 			# Generate 10 adversarial examples
 			while (num_count < 10):
 
 				# Process the digit only if it's a "2"
 				if (mnist.train.labels[idx][2] == 1):
 
-					# Store image
-					image = np.reshape(mnist.test.images[idx], (-1, 784))
+					# Store image locally and for visualization
+					image = np.reshape(mnist.train.images[idx], (-1, 784))
+					original_images.append(mnist.train.images[idx])
 
 					# Calculate loss and gradients
 					cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv)
@@ -183,20 +189,66 @@ class DeepCNN:
 						below = image - eps
 						kernel = alpha * signed_grad
 
+						# Store pertubation
+						pertubations.append(kernel)
+
 						# Update adversarial image
 						adv_x = tf.clip_by_value(adv_x - kernel, below, above)
 						
 						# Output iteration # and loss
 						print('step %d, loss=%g' % (k+1, loss_value))
 
-					# Feed adversarial image to network and store output
+					# Feed adversarial image to network and predict
 					adv_x = np.reshape(adv_x.eval(), (-1, 784))
 					pred2 = sess.run(y_conv, feed_dict = {x: adv_x, y_: target_one_hot, keep_prob: 1.0})
 					label2 = np.argmax(pred2)
 					print label2
 
+					# Store output images
+					adversarial_images.append(adv_x)
+
 					num_count = num_count + 1
 				idx = idx + 1
+
+		output = [original_images, pertubations, adversarial_images]
+		return output
+
+# Plots the input image sets of originals, pertubations, and resulting adversarials
+def visualize_images(image_set):
+
+	# Store inputs
+	originals = image_set[0]
+	pertubations = image_set[1]
+	adversarials = image_set[2]
+
+	# Define plot structure
+	f, ax_arr = plt.subplots(10,3)
+
+	cols = ['Original Image', 'Delta', 'Adversarial Image']
+	for ax, col in zip(ax_arr[0], cols):
+	    ax.set_title(col)
+
+	for i in range(0, len(originals)):
+
+		# Show original image
+		original_image = originals[i]
+		original_image = original_image.reshape(28, 28)
+		ax_arr[i, 0].imshow(original_image)
+		ax_arr[i, 0].axis('off')
+
+		# Show pertubation
+		pertubation = pertubations[i]
+		pertubation = pertubation.reshape(28, 28)
+		ax_arr[i, 1].imshow(pertubation)
+		ax_arr[i, 1].axis('off')
+
+		# Show adversarial output
+		adversarial_image = adversarials[i]
+		adversarial_image = adversarial_image.reshape(28, 28)
+		ax_arr[i, 2].imshow(adversarial_image)
+		ax_arr[i, 2].axis('off')
+
+	plt.show()
 
 
 # Main function
@@ -221,7 +273,10 @@ def main():
 	# model.predict_network(x, mnist.test.images, y_conv, y_, keep_prob)
 
 	# Generate adversarial examples
-	model.create_adv_samples(x, y_conv, y_, keep_prob, 0.10, 10)
+	output_set = model.create_adv_samples(x, y_conv, y_, keep_prob, 0.10, 10)
+
+	# Vizualize output
+	visualize_images(output_set)
 
 # Runs main function only if the script is explicitly called -> prevents it from running during imports
 if __name__ == "__main__":
