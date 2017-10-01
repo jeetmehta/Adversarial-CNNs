@@ -2,6 +2,7 @@
 from tensorflow.examples.tutorials.mnist import input_data
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Load input data
 mnist = input_data.read_data_sets('MNIST_data', one_hot=True)
@@ -84,7 +85,7 @@ class DeepCNN:
 
 		# Define cross-entropy loss function, gradient and training configuration
 		cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv))
-		self.gradient = tf.gradients(cross_entropy, x)
+		gradient = tf.gradients(cross_entropy, x)
 		train_step = tf.train.AdamOptimizer(self.learning_rate).minimize(cross_entropy)
 
 		# Start Tensorflow sesssion
@@ -141,68 +142,87 @@ class DeepCNN:
 			# Load the trained model
 			self.saver.restore(sess, self.save_filename)
 
-			# Create variables to store sample information: image, label, one_hot_vector, prediction_vector, predicted_label
-			sample_images = np.empty(shape=(10, 784))
-			sample_predictions = np.empty(shape=(10,10))
-			sample_predicted_labels = np.empty(shape=(10,1))
-			sample_labels = np.empty(shape=(10,1))
-			sample_one_hots = np.empty(shape=(10,10))
-			idx, test, num_count = 0, 0, 0
+			# Declare target class: "6" in this case
+			target_one_hot = [0, 0, 0, 0, 0, 0, 1., 0, 0, 0]
 
-			# Find and store subset variables: 10 samples of "2", along with their associated info
+			# Looping indices/variables
+			idx, num_count = 0, 0
+
+			# Generate 10 adversarial examples
 			while (num_count < 10):
-				idx = idx + 1
+
+				# Process the digit only if it's a "2"
 				if (mnist.train.labels[idx][2] == 1):
-					sample_labels[num_count] = np.argmax(mnist.train.labels[idx])
-					sample_one_hots[num_count] = mnist.train.labels[idx]
-					sample_images[num_count] = mnist.train.images[idx]
-					sample_predictions[num_count] = sess.run(y_conv, feed_dict={x: np.reshape(sample_images[num_count], (-1, 784)), y_: np.reshape(sample_one_hots[num_count], (-1, 10)), keep_prob: 1.0})
-					sample_predicted_labels[num_count] = np.argmax(sample_predictions[num_count])
+
+					# Store local/relevant variables of the image
+					image = mnist.test.images[idx]
+					y_onehot = mnist.test.labels[idx]
+					predictions = sess.run(y_conv, feed_dict={x: image, keep_prob: 1.0})
+					label1 = np.argmax(predictions)
+
+					# Calculate loss and gradients
+					cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv)
+					grad = tf.gradients(cross_entropy, x)
+					np_grad = sess.run(grad, feed_dict = {x: image, y_: target_one_hot, keep_prob: 1.0})
+					signed_grad = np.sign(np_grad[0])
+
+					# # One-Step Target Class: Fast Gradient Sign Method
+					# adv_weight = 2
+					# noise = adv_weight * signed_grad
+					# adv_image = image - noise
+					# pred2 = sess.run(y_conv, feed_dict = {x: adv_image, keep_prob: 1.0})
+					# label2 = np.argmax(pred2)
+					# print(label2)
+
+					# Iterative Target Class: Fast Gradient Sign Method
+					adv_x = tf.convert_to_tensor(image)
+					alpha = 2
+					eps = 0.25
+					learning_rate = 1e-4
+					num_iterations = 10
+
+					# Iteratively use the gradient to move the adversarial image towards the target class
+					for k in range(0, num_iterations):
+
+						# Gradient descent
+						cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv)
+						optim_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(cross_entropy)
+						loss_value = sess.run([optim_step, cross_entropy], feed_dict={x: adv_x.eval(), y_: target_one_hot, keep_prob: 1.0})[1]
+
+						# Clip function
+						above = image + eps
+						below = image - eps
+						kernel = alpha * signed_grad
+
+						# Update adversarial image
+						adv_x = tf.clip_by_value(adv_x - kernel, below, above)
+						
+						# Output iteration # and loss
+						print('step %d, loss=%g' % (k+1, loss_value))
+
+					# Feed adversarial image to network and store output
+					pred2 = sess.run(y_conv, feed_dict = {x: adv_x.eval(), y_: target_one_hot, keep_prob: 1.0})
+					label2 = np.argmax(pred2)
+					print label2
+
 					num_count = num_count + 1
-
-			print sample_labels
-			print sample_predicted_labels
-
-			# Add noise to each sample image
-			for i in range(0, len(sample_labels)):
-
-				# Image-wise local info
-				image = sample_images[i]
-				prediction_label = sample_predicted_labels[i]
-				label = sample_labels[i]
-				one_hot = sample_one_hots[i]
-
-				# Store & Calculate gradients
-				gradient_output = np.array(sess.run(self.gradient, feed_dict={x:np.reshape(image, (-1, 784)), y_:np.reshape(one_hot, (-1, 10)), keep_prob:1.0}))
-				gradient_sign = np.sign(gradient_output[0])
-				normalized_gradient = sum([np.abs(w) for w in gradient_output[0]])
-
-				# Add noise to input samples
-				count = 0
-				adv_weight = 0.01
-
-				# Create adversarial image
-				noise = adv_weight * gradient_sign
-				adversarial_image = noise + image
-				new_prediction = sess.run(y_conv, feed_dict={x: adversarial_image, keep_prob:1.0})
-				new_predicted_label = np.argmax(new_prediction)
-				print(new_predicted_label)
+				idx = idx + 1
 
 
 # Main function
 def main():
 
 	# Define placeholders for input, ground truths & dropout probabilities
-	x = tf.placeholder(tf.float32, shape=[None, 784])
-	y_ = tf.placeholder(tf.float32, shape=[None, 10])
+	x = tf.placeholder(tf.float32, shape=[784])
+	y_ = tf.placeholder(tf.float32, shape=[10])
 	keep_prob = tf.placeholder(tf.float32)
 
 	# Initialize & build CNN model -> save output variable
-	model = DeepCNN(1e-4, 50, 50, 'deep_cnn_model')
+	model = DeepCNN(1e-4, 50, 100, 'deep_cnn_model')
 	y_conv = model.build_network(x, keep_prob)
 
 	# Train the network
-	model.train_network(x, y_conv, y_, keep_prob, True)
+	# model.train_network(x, y_conv, y_, keep_prob, True)
 
 	# Evaluate performance
 	# model.evaluate_network(x, y_conv, y_, keep_prob)
