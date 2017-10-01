@@ -143,7 +143,7 @@ class DeepCNN:
 			self.saver.restore(sess, self.save_filename)
 
 			# Declare target class: "6" in this case
-			target_one_hot = [0, 0, 0, 0, 0, 0, 1., 0, 0, 0]
+			target_one_hot = np.reshape([0, 0, 0, 0, 0, 0, 1., 0, 0, 0], (-1, 10))
 
 			# Looping indices/variables
 			idx, num_count = 0, 0
@@ -154,25 +154,14 @@ class DeepCNN:
 				# Process the digit only if it's a "2"
 				if (mnist.train.labels[idx][2] == 1):
 
-					# Store local/relevant variables of the image
-					image = mnist.test.images[idx]
-					y_onehot = mnist.test.labels[idx]
-					predictions = sess.run(y_conv, feed_dict={x: image, keep_prob: 1.0})
-					label1 = np.argmax(predictions)
+					# Store image
+					image = np.reshape(mnist.test.images[idx], (-1, 784))
 
 					# Calculate loss and gradients
 					cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv)
 					grad = tf.gradients(cross_entropy, x)
 					np_grad = sess.run(grad, feed_dict = {x: image, y_: target_one_hot, keep_prob: 1.0})
 					signed_grad = np.sign(np_grad[0])
-
-					# # One-Step Target Class: Fast Gradient Sign Method
-					# adv_weight = 2
-					# noise = adv_weight * signed_grad
-					# adv_image = image - noise
-					# pred2 = sess.run(y_conv, feed_dict = {x: adv_image, keep_prob: 1.0})
-					# label2 = np.argmax(pred2)
-					# print(label2)
 
 					# Iterative Target Class: Fast Gradient Sign Method
 					adv_x = tf.convert_to_tensor(image)
@@ -187,7 +176,7 @@ class DeepCNN:
 						# Gradient descent
 						cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv)
 						optim_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(cross_entropy)
-						loss_value = sess.run([optim_step, cross_entropy], feed_dict={x: adv_x.eval(), y_: target_one_hot, keep_prob: 1.0})[1]
+						loss_value = sess.run([optim_step, cross_entropy], feed_dict={x: image, y_: target_one_hot, keep_prob: 1.0})[1]
 
 						# Clip function
 						above = image + eps
@@ -201,7 +190,8 @@ class DeepCNN:
 						print('step %d, loss=%g' % (k+1, loss_value))
 
 					# Feed adversarial image to network and store output
-					pred2 = sess.run(y_conv, feed_dict = {x: adv_x.eval(), y_: target_one_hot, keep_prob: 1.0})
+					adv_x = np.reshape(adv_x.eval(), (-1, 784))
+					pred2 = sess.run(y_conv, feed_dict = {x: adv_x, y_: target_one_hot, keep_prob: 1.0})
 					label2 = np.argmax(pred2)
 					print label2
 
@@ -213,12 +203,12 @@ class DeepCNN:
 def main():
 
 	# Define placeholders for input, ground truths & dropout probabilities
-	x = tf.placeholder(tf.float32, shape=[784])
-	y_ = tf.placeholder(tf.float32, shape=[10])
+	x = tf.placeholder(tf.float32, shape=[None, 784])
+	y_ = tf.placeholder(tf.float32, shape=[None, 10])
 	keep_prob = tf.placeholder(tf.float32)
 
 	# Initialize & build CNN model -> save output variable
-	model = DeepCNN(1e-4, 50, 100, 'deep_cnn_model')
+	model = DeepCNN(1e-4, 50, 20000, 'deep_cnn_model')
 	y_conv = model.build_network(x, keep_prob)
 
 	# Train the network
