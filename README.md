@@ -11,7 +11,7 @@ This section will provide some context into the impact of adversarial images on 
 
 Deep convolutional networks (CNNs) are state-of-the-art models for image classification models and object detection. As the models become increasingly more innovative, and computing power continues to increase, they're often compared in popular media to possess "human-like" vision. However, these models posses some key limitations, such as misclassifying an image that's only slightly noisy with high confidence. Here's an example below:
 
-![Example of the effect of gradient-based noise on classification systems] (http://karpathy.github.io/assets/break/breakconv.png)
+![Example of the effect of gradient-based noise on classification systems](http://karpathy.github.io/assets/break/breakconv.png)
 
 Clearly, the difference between the two images is so subtle that it's essentially impossible for humans to differentiate between them. Both images should be classified correctly as "panda". However, small amounts of noise like this make a **significant** impact on linear-learning based systems, such as Deep CNNs. This can be seen above, where the system classifies the noisy image as "gibbon", with **99.3 % confidence**
 
