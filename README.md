@@ -68,6 +68,20 @@ This was the approach utilized within this project, and the related output is sh
 
 ## Results
 
+### Running the Code
+
+For those interested, the code can easily be run just by performing the following command in Terminal
+
+    python mnist_deep_cnn_classifier.py
+
+**Note:** The model must be trained and saved beforehand. In order to do this, just uncomment the following line (on line 267):
+
+    model.train_network(x, y_conv, y_, keep_prob, True)
+
+and run the program. Once the network is trained and saved (this function will train and save the trained network offline), feel free to re-comment this line for future program runs to save time!
+
+### Outcomes
+
 The iterative, targeted fast gradient sign method (FGSM) approach worked amazingly well, allowing a consistent misclassification of the input "2"'s as "6"'s, thereby meeting the goals of the project.
 
 For visualization purposes, the resulting output images are plotted and shown below.
