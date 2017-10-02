@@ -159,6 +159,10 @@ class DeepCNN:
 				# Process the digit only if it's a "2"
 				if (mnist.train.labels[idx][2] == 1):
 
+					# Console output
+					print "Original Digit: 2"
+					print "Creating Adversarial Image ..."
+
 					# Store image locally and for visualization
 					image = np.reshape(mnist.train.images[idx], (-1, 784))
 					original_images.append(mnist.train.images[idx])
@@ -202,7 +206,7 @@ class DeepCNN:
 					adv_x = np.reshape(adv_x.eval(), (-1, 784))
 					pred2 = sess.run(y_conv, feed_dict = {x: adv_x, y_: target_one_hot, keep_prob: 1.0})
 					label2 = np.argmax(pred2)
-					print label2
+					print "Adversarial Prediction: ", label2
 
 					# Store output images
 					adversarial_images.append(adv_x)

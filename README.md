@@ -74,7 +74,7 @@ For those interested, the code can easily be run just by performing the followin
 
     python mnist_deep_cnn_classifier.py
 
-**Note:** The model must be trained and saved beforehand. In order to do this, just uncomment the following line (on line 267):
+**Note:** The model must be trained and saved beforehand. This can be done by cloning the repository, and using the saved model OR training the model locally. If you chose the local option, just uncomment the following line (on line 267):
 
     model.train_network(x, y_conv, y_, keep_prob, True)
 
@@ -82,11 +82,16 @@ and run the program. Once the network is trained and saved (this function will t
 
 ### Outcomes
 
-The iterative, targeted fast gradient sign method (FGSM) approach worked amazingly well, allowing a consistent misclassification of the input "2"'s as "6"'s, thereby meeting the goals of the project.
+The iterative, targeted fast gradient sign method (FGSM) approach worked amazingly well, allowing a consistent misclassification of the input "2"'s as "6"'s,  within just 10 iterations of the algorithm.
+
+An example of the terminal output that you should see is given below:
+![Terminal output during the run of the program](https://lh3.googleusercontent.com/-h-yteyW7u-Y/WdJgB8wrbJI/AAAAAAAAY2c/7S-C1s02Ad8w3Rik75CziAlH7nu--xZNgCLcBGAs/s0/Screen+Shot+2017-10-02+at+11.46.40+AM.png "Screen Shot 2017-10-02 at 11.46.40 AM.png")
 
 For visualization purposes, the resulting output images are plotted and shown below.
 
 ![Network output showing the effects of adversarial perturbations](https://lh3.googleusercontent.com/-SAdMnhO7Hp4/WdG8L7zUK4I/AAAAAAAAY1M/7AAt8bSMZwErqO062k4IQnOGm6sCbUpOwCLcBGAs/s0/output.png "output.png")
+
+As it can be seen above, although the adversarial image looks very similar to the original image, the network classifies it as a "6" with over 99% confidence!
 
 ## References
 
