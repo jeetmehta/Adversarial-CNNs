@@ -269,9 +269,6 @@ def main():
 	# Evaluate performance
 	# model.evaluate_network(x, y_conv, y_, keep_prob)
 
-	# Predict performance
-	# model.predict_network(x, mnist.test.images, y_conv, y_, keep_prob)
-
 	# Generate adversarial examples
 	output_set = model.create_adv_samples(x, y_conv, y_, keep_prob, 0.10, 10)
 
