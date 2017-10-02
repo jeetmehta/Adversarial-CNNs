@@ -91,3 +91,4 @@ Numerous research papers, blogs and articles were used for this project, and lin
  11. https://github.com/Evolving-AI-Lab/fooling
  12. https://arxiv.org/pdf/1611.01236.pdf
  13. http://www.anishathalye.com/2017/07/25/synthesizing-adversarial-examples/
+ 14. https://docs.google.com/document/d/1pp7QoybBO-JBPPyRLrqPO9Mav9-vrLlPpC7funeklY0/pub
