@@ -62,7 +62,8 @@ However, a single gradient step may not be sufficient to converge towards the ta
 
 The iterative alternative, proposed originally by Kurakin et al. (see [Adversarial Examples in the Physical World](https://arxiv.org/pdf/1607.02533.pdf)) and summarized by Goodfellow in his most recent paper on the topic ([Adversarial Machine Learning At Scale](https://arxiv.org/pdf/1611.01236.pdf)) works as follows:
 
-![The iterative fast gradient sign method as proposed by Kurakin and Goodfellow](https://lh3.googleusercontent.com/-Jn90kNBBbC4/WdG5udtcXYI/AAAAAAAAY0w/tYahAVGN_-cSq9F28ZfDj-q8WG0_JqfXACLcBGAs/s0/Screen+Shot+2017-10-01+at+11.58.56+PM.png "Screen Shot 2017-10-01 at 11.58.56 PM.png")
+
+![The iterative fast gradient sign method as proposed by Kurakin and Goodfellow](https://lh3.googleusercontent.com/dpOI5DP-ai7zu0idlFIdv-D062TOuAeBkX-h50xRyLXtAxkmkKBQst7GiTQDu9xkV0pfFqD2ftw13A=s0 "Screen Shot 2017-10-01 at 11.58.56 PM.png")
 
 This was the approach utilized within this project, and the related output is shown in the next section.
 
@@ -85,11 +86,12 @@ and run the program. Once the network is trained and saved (this function will t
 The iterative, targeted fast gradient sign method (FGSM) approach worked amazingly well, allowing a consistent misclassification of the input "2"'s as "6"'s,  within just 10 iterations of the algorithm.
 
 An example of the terminal output that you should see is given below:
-![Terminal output during the run of the program](https://lh3.googleusercontent.com/-h-yteyW7u-Y/WdJgB8wrbJI/AAAAAAAAY2c/7S-C1s02Ad8w3Rik75CziAlH7nu--xZNgCLcBGAs/s0/Screen+Shot+2017-10-02+at+11.46.40+AM.png "Screen Shot 2017-10-02 at 11.46.40 AM.png")
+
+![Terminal output during the run of the program](https://lh3.googleusercontent.com/xu8PjpNUJBV_kiWyJFqqMqWA-QrLBrU4isRvnHqh0GSJ0fsTxydDxVWFEyL0o6n9D0PKthu9qDbUMA=s0 "Screen Shot 2017-10-02 at 11.46.40 AM.png")
 
 For visualization purposes, the resulting output images are plotted and shown below.
 
-![Network output showing the effects of adversarial perturbations](https://lh3.googleusercontent.com/-SAdMnhO7Hp4/WdG8L7zUK4I/AAAAAAAAY1M/7AAt8bSMZwErqO062k4IQnOGm6sCbUpOwCLcBGAs/s0/output.png "output.png")
+![Network output showing the effects of adversarial perturbations](https://lh3.googleusercontent.com/YHJhRDmrFvfuvBdVmnch32coVUoeIrbrqmUzVaig5RaZoodbvsnoQ8KsmZPid7adIKBqcTRcc6kF8A=s0 "output.png")
 
 As it can be seen above, although the adversarial image looks very similar to the original image, the network classifies it as a "6" with over 99% confidence!
 
